@@ -61,12 +61,22 @@ function render() {
   const action = gate.outcome?.action;
   const fit = gate.decision?.intentFit;
   const kind = gate.decision?.siteKind;
+  const explicitRestriction = gate.outcome?.reason === "explicit_restriction";
   elements.hostname.textContent = gate.hostname;
   elements.title.textContent = gate.title || "Untitled page";
-  elements.fit.textContent = label(fit?.choice || "unknown");
+  elements.fit.textContent = explicitRestriction
+    ? "explicit restriction"
+    : label(fit?.choice || "unknown");
   elements.kind.textContent = label(kind?.choice || "unknown");
-  elements.confidence.textContent = percent(fit?.confidence);
-  elements.explanation.textContent = explanationText(fit?.choice, kind?.choice, action);
+  elements.confidence.textContent = percent(
+    explicitRestriction ? gate.decision?.explicitlyDisallowed : fit?.confidence
+  );
+  elements.explanation.textContent = explanationText(
+    fit?.choice,
+    kind?.choice,
+    action,
+    gate.outcome?.reason
+  );
 
   const intent = gate.intents?.daily || gate.intents?.weekly || gate.intents?.always;
   if (intent) elements.intentText.textContent = `“${intent}”`;
@@ -183,14 +193,16 @@ function label(value) {
   return String(value || "").replaceAll("_", " ");
 }
 
-function explanationText(fit, kind, action) {
-  const fitText = {
-    likely_drift: "Jev sees signs of habitual or open-ended browsing rather than a clear current purpose.",
-    conflicts: "Jev sees a direct conflict with the intention you wrote.",
-    intentional_leisure: "Jev sees this as leisure that may fit the context you described.",
-    purposeful: "Jev sees a plausible deliberate purpose.",
-    supports: "Jev sees this visit as supportive of an active goal."
-  }[fit] || "Jev compared this visit with your active intentions.";
+function explanationText(fit, kind, action, reason) {
+  const fitText = reason === "explicit_restriction"
+    ? "An active intention explicitly disallows this kind of visit at the current local time."
+    : {
+        likely_drift: "Jev sees signs of habitual or open-ended browsing rather than a clear current purpose.",
+        conflicts: "Jev sees a direct conflict with the intention you wrote.",
+        intentional_leisure: "Jev sees this as leisure that may fit the context you described.",
+        purposeful: "Jev sees evidence of a deliberate purpose.",
+        supports: "Jev sees this visit as supportive of an active goal."
+      }[fit] || "Jev compared this visit with your active intentions.";
   const kindText = kind === "attention_sink"
     ? " The destination is usually optimized for continued consumption."
     : kind === "mixed_use"

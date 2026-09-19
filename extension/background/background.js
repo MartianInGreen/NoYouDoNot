@@ -28,6 +28,7 @@ const TRACKING_ALARM = "nydn-tracking-heartbeat";
 const CLEANUP_ALARM = "nydn-storage-cleanup";
 const MAX_TICK_SECONDS = 90;
 const SITE_CACHE_TTL_MS = 10 * 60 * 1000;
+const SITE_CLASSIFIER_VERSION = 2;
 const FEED_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DECISION_LIMIT = 250;
 const FEEDBACK_LIMIT = 80;
@@ -319,6 +320,9 @@ async function classifyNavigation(details) {
   const intents = activeIntentSnapshot(settings, now);
   if (!hasAnyIntent(intents)) return;
   const behavior = behaviorSnapshot(stats || clone(EMPTY_STATS), runtime, hostname, now);
+  const localTime = `${String(now.getHours()).padStart(2, "0")}:${String(
+    now.getMinutes()
+  ).padStart(2, "0")}`;
   const page = {
     hostname,
     path: parsed.pathname.slice(0, 500),
@@ -326,9 +330,12 @@ async function classifyNavigation(details) {
   };
   const cacheKey = stableHash({
     type: "site",
+    classifierVersion: SITE_CLASSIFIER_VERSION,
     page,
     intents,
-    period: timeBucket(now),
+    localDate: localDateKey(now),
+    localTime,
+    weekday: now.getDay(),
     usageBand: Math.floor(behavior.minutesOnSiteToday / 10)
   });
 
@@ -340,7 +347,7 @@ async function classifyNavigation(details) {
         page,
         intents,
         context: {
-          localTime: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          localTime,
           weekday: now.toLocaleDateString([], { weekday: "long" }),
           timeOfDay: timeBucket(now),
           behavior
@@ -907,7 +914,9 @@ async function popupData() {
     title: tab?.title || "",
     site,
     lastDecision,
+    isProtected: isProtectedDomain(hostname, data.settings.sitePolicy.protectedDomains),
     hasGrant: hasGrant(data.runtime, hostname),
+    siteConfidenceThreshold: data.settings.sitePolicy.confidenceThreshold,
     bridgeConfigured: Boolean(data.settings.bridge.token)
   };
 }

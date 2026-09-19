@@ -33,18 +33,30 @@ export function deriveSiteAction(decision, sitePolicy) {
     return { action: "allow", reason: "observe_mode" };
   }
 
+  const threshold = Number(sitePolicy?.confidenceThreshold ?? 0.62);
+  const withChat = Boolean(sitePolicy?.interventionEnabled);
+  const explicitlyDisallowed = Number(decision?.explicitlyDisallowed);
+  if (Number.isFinite(explicitlyDisallowed) && explicitlyDisallowed >= threshold) {
+    if (withChat) return { action: "chat", reason: "explicit_restriction" };
+    return enforcement === "strict"
+      ? { action: "block", reason: "explicit_restriction" }
+      : { action: "nudge", reason: "explicit_restriction" };
+  }
+
   const fit = decision?.intentFit?.choice;
   const confidence = Number(decision?.intentFit?.confidence || 0);
-  const threshold = Number(sitePolicy?.confidenceThreshold ?? 0.62);
-  if (!fit || confidence < threshold) {
-    return { action: "allow", reason: "low_confidence" };
-  }
+  if (!fit) return { action: "allow", reason: "unknown_classification" };
 
   if (fit === "supports" || fit === "purposeful" || fit === "intentional_leisure") {
     return { action: "allow", reason: fit };
   }
 
-  const withChat = Boolean(sitePolicy?.interventionEnabled);
+  // Confidence only gates adverse classifications. A low-confidence positive
+  // classification would be allowed regardless, so the threshold is not its reason.
+  if (confidence < threshold) {
+    return { action: "allow", reason: "low_confidence" };
+  }
+
   if (fit === "likely_drift") {
     if (enforcement === "strict" && withChat) {
       return { action: "chat", reason: fit };

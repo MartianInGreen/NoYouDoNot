@@ -34,19 +34,28 @@ export function createJevService(config, options = {}) {
       model: config.model || "jev-latest",
       state,
       questions: {
+        explicitly_disallowed: noul(
+          "At state.current_context.local_time, does any active user intention explicitly disallow this specific visit right now? Resolve stated local-time ranges literally. Apply named destinations and ordinary categories such as social media, feeds, entertainment, or distracting websites to matching destinations. Do not invent an unstated productive purpose or exception. Do not treat merely failing to advance a goal as an explicit prohibition.",
+          {
+            true:
+              "An active intention clearly prohibits this destination, its category, or this kind of visit at the stated local time.",
+            false:
+              "No active intention clearly prohibits this specific visit at the stated local time."
+          }
+        ),
         intent_fit: choice(
-          "Classify how this specific visit relates to the user's active intentions. Use the current time and behavior only as context. Select the single best description.",
+          "Classify how this specific visit relates to the user's active intentions right now. Apply explicit restrictions and time windows literally. Use behavior as supporting context, and do not invent a deliberate purpose that is not evidenced by the visit title, path, or intentions. Select the single best description.",
           {
             supports:
               "Clearly advances an active goal, project, responsibility, or useful task described by the user.",
             purposeful:
-              "Has a plausible deliberate purpose and does not conflict with an intention, even if it is not directly goal-advancing.",
+              "The available visit context provides evidence of a deliberate purpose and the visit does not conflict with an active intention.",
             intentional_leisure:
               "Leisure or entertainment that the user's words and current context explicitly make appropriate now.",
             likely_drift:
-              "Probably habitual checking, open-ended browsing, or time use the user is trying to reduce, but the conflict is not explicit or severe.",
+              "Probably habitual checking, open-ended browsing, or time use the user is trying to reduce, but no explicit prohibition clearly applies now.",
             conflicts:
-              "Clearly conflicts with the user's stated intentions or is the kind of browsing they explicitly want to stop now."
+              "An active intention prohibits this destination, its category, or this kind of browsing now, or the visit otherwise clearly conflicts with what the user said."
           }
         ),
         site_kind: choice(
@@ -80,6 +89,7 @@ export function createJevService(config, options = {}) {
     });
 
     return {
+      explicitlyDisallowed: response.answers.explicitly_disallowed.noul,
       intentFit: normalizeChoice(response.answers.intent_fit),
       siteKind: normalizeChoice(response.answers.site_kind),
       purposeful: response.answers.purposeful.noul,

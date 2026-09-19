@@ -30,6 +30,7 @@ test("site classifier builds typed atomic Jev questions", async () => {
         model: "jev-test",
         usage: { input_tokens: 10, output_tokens: 4 },
         answers: {
+          explicitly_disallowed: { type: "noul", noul: 0.05 },
           intent_fit: choiceAnswer("supports", ["supports", "purposeful", "intentional_leisure", "likely_drift", "conflicts"]),
           site_kind: choiceAnswer("useful_tool", ["useful_tool", "mixed_use", "attention_sink"]),
           purposeful: { type: "noul", noul: 0.9 },
@@ -45,10 +46,13 @@ test("site classifier builds typed atomic Jev questions", async () => {
     context: { behavior: { minutesOnSiteToday: 4 } }
   });
 
+  assert.equal(captured.questions.explicitly_disallowed.type, "noul");
+  assert.match(captured.questions.explicitly_disallowed.instructions, /local-time ranges literally/);
   assert.equal(captured.questions.intent_fit.type, "choice");
   assert.equal(captured.questions.purposeful.type, "noul");
   assert.equal(captured.questions.expected_value.type, "score");
   assert.equal(captured.state.visit.hostname, "example.com");
+  assert.equal(result.explicitlyDisallowed, 0.05);
   assert.equal(result.intentFit.choice, "supports");
   assert.equal(result.expectedValue.score, 2.2);
 });

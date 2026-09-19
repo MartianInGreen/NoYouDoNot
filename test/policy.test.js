@@ -24,6 +24,32 @@ test("site policy always fails open below the confidence threshold", () => {
   assert.deepEqual(result, { action: "allow", reason: "low_confidence" });
 });
 
+test("a direct active restriction takes precedence over an uncertain broad classification", () => {
+  assert.deepEqual(
+    deriveSiteAction(
+      {
+        explicitlyDisallowed: 0.94,
+        intentFit: { choice: "conflicts", confidence: 0.35 }
+      },
+      { enforcement: "balanced", confidenceThreshold: 0.62, interventionEnabled: true }
+    ),
+    { action: "chat", reason: "explicit_restriction" }
+  );
+});
+
+test("an uncertain direct restriction still fails open", () => {
+  assert.deepEqual(
+    deriveSiteAction(
+      {
+        explicitlyDisallowed: 0.61,
+        intentFit: { choice: "conflicts", confidence: 0.61 }
+      },
+      { enforcement: "strict", confidenceThreshold: 0.62, interventionEnabled: false }
+    ),
+    { action: "allow", reason: "low_confidence" }
+  );
+});
+
 test("balanced mode sends explicit conflicts to reflection when enabled", () => {
   assert.deepEqual(
     deriveSiteAction(
@@ -44,14 +70,14 @@ test("strict mode blocks conflicts without an override barrier", () => {
   );
 });
 
-test("intent-supporting visits are allowed", () => {
+test("positive classifications are the allow reason regardless of confidence", () => {
   for (const choice of ["supports", "purposeful", "intentional_leisure"]) {
-    assert.equal(
+    assert.deepEqual(
       deriveSiteAction(
-        { intentFit: { choice, confidence: 0.9 } },
+        { intentFit: { choice, confidence: 0.2 } },
         { enforcement: "strict", confidenceThreshold: 0.6, interventionEnabled: true }
-      ).action,
-      "allow"
+      ),
+      { action: "allow", reason: choice }
     );
   }
 });

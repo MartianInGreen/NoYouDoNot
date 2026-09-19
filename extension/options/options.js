@@ -219,14 +219,16 @@ function renderDecisions() {
   list.replaceChildren(
     ...decisions.map((decision) => {
       const fit = String(decision.decision?.intentFit?.choice || "unknown").replaceAll("_", " ");
+      const confidence = Math.round(Number(decision.decision?.intentFit?.confidence || 0) * 100);
       const action = decision.outcome?.action || "allow";
+      const reason = String(decision.outcome?.reason || "unknown").replaceAll("_", " ");
       const row = makeElement("div", "decision-item");
       const bullet = makeElement("span", "decision-bullet");
       bullet.classList.add(action);
       const copy = document.createElement("span");
       copy.append(
         makeElement("strong", "", decision.hostname),
-        makeElement("small", "", `${fit} → ${action}`)
+        makeElement("small", "", `${fit} (${confidence}%) → ${action} · ${reason}`)
       );
       const time = makeElement("time", "", relativeTime(decision.timestamp));
       row.append(bullet, copy, time);

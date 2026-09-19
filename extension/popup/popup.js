@@ -65,10 +65,21 @@ function render(data) {
   const fit = decision?.decision?.intentFit;
   if (!fit) {
     elements.fit.textContent = "—";
-    elements.status.textContent = data.enabled ? "waiting" : "paused";
-    elements.note.textContent = data.enabled
-      ? "No Jev judgment for this site yet. It is evaluated on the next navigation."
-      : "Intent checks and feed filtering are paused.";
+    if (!data.enabled) {
+      elements.status.textContent = "paused";
+      elements.status.className = "status-pill";
+      elements.note.textContent = "Intent checks and feed filtering are paused.";
+    } else if (data.isProtected) {
+      elements.status.textContent = "protected";
+      elements.status.className = "status-pill good";
+      elements.note.textContent =
+        "This domain is in your “Never interrupt” list, so it is not sent to Jev.";
+    } else {
+      elements.status.textContent = "waiting";
+      elements.status.className = "status-pill";
+      elements.note.textContent =
+        "No Jev judgment yet. Reload this tab or navigate to another page to evaluate it.";
+    }
     return;
   }
 
@@ -80,11 +91,22 @@ function render(data) {
     conflicts: "conflict"
   };
   const label = labels[fit.choice] || fit.choice;
-  elements.fit.textContent = `${Math.round((fit.confidence || 0) * 100)}%`;
+  const confidence = Math.round((fit.confidence || 0) * 100);
+  const threshold = Math.round((data.siteConfidenceThreshold || 0.62) * 100);
+  elements.fit.textContent = `${confidence}%`;
   elements.status.textContent = label;
   elements.status.className = `status-pill ${statusClass(fit.choice)}`;
   const siteKind = String(decision.decision.siteKind?.choice || "site").replaceAll("_", " ");
-  elements.note.textContent = `Jev marked this visit “${label}” and the destination “${siteKind}.” ${decision.outcome.action === "allow" ? "No interruption was applied." : `Action: ${decision.outcome.action}.`}`;
+  if (decision.outcome.reason === "explicit_restriction") {
+    const restriction = Math.round(Number(decision.decision.explicitlyDisallowed || 0) * 100);
+    elements.note.textContent = `An active intention explicitly disallows this visit now (${restriction}% match). Action: ${decision.outcome.action}.`;
+  } else if (decision.outcome.reason === "low_confidence") {
+    elements.note.textContent = `Jev marked this visit “${label},” but ${confidence}% classification confidence is below your ${threshold}% threshold, so no interruption was applied.`;
+  } else if (["supports", "purposeful", "intentional_leisure"].includes(decision.outcome.reason)) {
+    elements.note.textContent = `Jev marked this visit “${label}” (${confidence}% confidence). That classification allows the visit; the threshold only gates potential interruptions.`;
+  } else {
+    elements.note.textContent = `Jev marked this visit “${label}” and the destination “${siteKind}.” ${decision.outcome.action === "allow" ? "Allowed by your current policy." : `Action: ${decision.outcome.action}.`}`;
+  }
 }
 
 async function checkBridge(configured) {

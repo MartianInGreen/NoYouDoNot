@@ -111,12 +111,13 @@ The extension computes exact time/open totals in code and sends Jev a small stat
 - named time-of-day bucket;
 - computed usage totals.
 
-One Jev call asks independent Choice, Noul, and Score questions. The extension then applies this policy:
+One Jev call asks independent Choice, Noul, and Score questions, including a direct check for whether an active intention explicitly disallows the visit at the exact local time. The extension then applies this policy:
 
-- supporting, purposeful, or explicitly appropriate leisure → allow;
+- a sufficiently certain explicit restriction → chat when the barrier is enabled; otherwise nudge or block by mode;
+- supporting, evidenced-purposeful, or explicitly appropriate leisure → allow;
 - likely drift → nudge, or chat in strict mode;
 - conflict → chat when the barrier is enabled; otherwise nudge or block by mode;
-- confidence below the chosen threshold → always allow.
+- uncertain AI judgments → always allow.
 
 Protected domains and temporary user grants are deterministic safety controls, not semantic browsing rules.
 
