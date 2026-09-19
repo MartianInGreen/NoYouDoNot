@@ -22,6 +22,7 @@
   const itemById = new Map();
   const pending = new Map();
   const retryTimers = new Map();
+  const twitterLocks = new WeakMap();
   let flushTimer;
   let scanTimer;
 
@@ -130,16 +131,20 @@
       element.classList.remove(
         "nydn-limited",
         "nydn-promoted",
+        "nydn-reviewing",
         "nydn-display-blur",
         "nydn-display-hide"
       );
+      unlockTwitterCard(element);
       element.querySelector(":scope > .nydn-verdict")?.remove();
 
       if (result.action === "limit" && result.display === "badge") {
         element.append(buildBadge(result, item, element, "Would limit"));
       } else if (result.action === "limit") {
+        lockTwitterCard(element);
         element.classList.add("nydn-limited", `nydn-display-${result.display || "blur"}`);
-        element.append(buildLimitCard(result, item, element));
+        const card = buildLimitCard(result, item, element);
+        element.append(card);
       } else if (result.action === "promote") {
         element.classList.add("nydn-promoted");
         element.append(buildBadge(result, item, element, "Worth your attention"));
@@ -158,31 +163,112 @@
     eyebrow.className = "nydn-eyebrow";
     eyebrow.textContent = "YOUR ALGORITHM";
     const heading = document.createElement("strong");
-    heading.textContent = "Filtered as low-value for you";
+    heading.textContent = result.display === "hide"
+      ? "Hidden from your feed"
+      : "Soft-limited in your feed";
     const detail = document.createElement("span");
     detail.className = "nydn-detail";
     detail.textContent = resultSummary(result);
     const actions = document.createElement("div");
     actions.className = "nydn-actions";
 
-    const show = button("Show once", "primary");
-    show.addEventListener("click", (event) => {
+    const review = button("Review item", "primary");
+    review.addEventListener("click", (event) => {
       stop(event);
-      element.classList.remove("nydn-limited", "nydn-display-blur", "nydn-display-hide");
+      beginReview(element, card, result, item);
+    });
+    actions.append(review);
+    card.append(eyebrow, heading, detail, actions);
+    card.addEventListener("click", stop);
+    isolateTwitterHover(card);
+    return card;
+  }
+
+  function lockTwitterCard(element) {
+    if (platform !== "twitter" || twitterLocks.has(element)) return;
+    const height = element.getBoundingClientRect().height;
+    if (!Number.isFinite(height) || height <= 0) return;
+
+    const cell = element.closest('[data-testid="cellInnerDiv"]');
+    const cellHeight = cell?.getBoundingClientRect().height || 0;
+    twitterLocks.set(element, { cell });
+
+    element.style.setProperty("--nydn-locked-height", `${height}px`);
+    element.classList.add("nydn-twitter-locked");
+    if (cell && Number.isFinite(cellHeight) && cellHeight > 0) {
+      cell.style.setProperty("--nydn-locked-cell-height", `${cellHeight}px`);
+      cell.classList.add("nydn-twitter-cell-locked");
+    }
+  }
+
+  function unlockTwitterCard(element) {
+    const lock = twitterLocks.get(element);
+    twitterLocks.delete(element);
+    element.classList.remove("nydn-twitter-locked");
+    element.style.removeProperty("--nydn-locked-height");
+    if (lock?.cell) {
+      lock.cell.classList.remove("nydn-twitter-cell-locked");
+      lock.cell.style.removeProperty("--nydn-locked-cell-height");
+    }
+  }
+
+  function isolateTwitterHover(node) {
+    if (platform !== "twitter") return;
+    for (const type of ["pointerover", "pointerout", "mouseover", "mouseout", "mousemove"]) {
+      node.addEventListener(type, (event) => event.stopPropagation());
+    }
+  }
+
+  function beginReview(element, card, result, item) {
+    element.classList.remove("nydn-limited", "nydn-display-blur", "nydn-display-hide");
+    element.classList.add("nydn-reviewing");
+    card.className = "nydn-verdict nydn-review-bar";
+
+    const eyebrow = document.createElement("span");
+    eyebrow.className = "nydn-eyebrow";
+    eyebrow.textContent = "REVIEW MODE";
+    const heading = document.createElement("strong");
+    heading.textContent = "Does this belong in your feed?";
+    const detail = document.createElement("span");
+    detail.className = "nydn-detail";
+    const itemPreview = clean(item?.title || item?.text, 180);
+    detail.textContent = itemPreview
+      ? `“${itemPreview}” · Nothing is recorded until you choose.`
+      : "Nothing is recorded until you choose.";
+    const actions = document.createElement("div");
+    actions.className = "nydn-actions";
+
+    const keep = button("Keep filtered", "quiet");
+    keep.addEventListener("click", (event) => {
+      stop(event);
+      sendFeedback(item, result, "limit");
+      element.classList.remove("nydn-reviewing");
+      element.classList.add("nydn-limited", `nydn-display-${result.display || "blur"}`);
+      const replacement = buildLimitCard(result, item, element);
+      card.replaceWith(replacement);
+    });
+
+    const showOnce = button("Show once", "quiet");
+    showOnce.addEventListener("click", (event) => {
+      stop(event);
+      element.classList.remove("nydn-reviewing");
+      unlockTwitterCard(element);
+      element.dataset.nydnAction = "show-once";
+      card.remove();
+    });
+
+    const correct = button("Should be shown", "primary");
+    correct.addEventListener("click", (event) => {
+      stop(event);
+      element.classList.remove("nydn-reviewing");
+      unlockTwitterCard(element);
+      element.dataset.nydnAction = "feedback-show";
       card.remove();
       sendFeedback(item, result, "show");
     });
-    const confirm = button("Good filter", "quiet");
-    confirm.addEventListener("click", (event) => {
-      stop(event);
-      confirm.textContent = "Noted ✓";
-      confirm.disabled = true;
-      sendFeedback(item, result, "limit");
-    });
-    actions.append(show, confirm);
-    card.append(eyebrow, heading, detail, actions);
-    card.addEventListener("click", stop);
-    return card;
+
+    actions.append(keep, showOnce, correct);
+    card.replaceChildren(eyebrow, heading, detail, actions);
   }
 
   function buildBadge(result, item, element, label) {
@@ -290,9 +376,11 @@
     element.classList.remove(
       "nydn-limited",
       "nydn-promoted",
+      "nydn-reviewing",
       "nydn-display-blur",
       "nydn-display-hide"
     );
+    unlockTwitterCard(element);
     element.querySelector(":scope > .nydn-verdict")?.remove();
     delete element.dataset.nydnPending;
     delete element.dataset.nydnClassified;

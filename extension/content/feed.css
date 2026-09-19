@@ -28,8 +28,8 @@
 }
 
 .nydn-limited.nydn-display-blur > :not(.nydn-verdict) {
-  filter: blur(14px) saturate(0.35) !important;
-  opacity: 0.28 !important;
+  filter: blur(4px) saturate(0.72) !important;
+  opacity: 0.72 !important;
   pointer-events: none !important;
   user-select: none !important;
 }
@@ -73,11 +73,146 @@
   box-shadow: 0 8px 30px rgba(24, 25, 35, 0.14) !important;
 }
 
-.nydn-limit-card strong {
+.nydn-limited.nydn-display-blur > .nydn-limit-card {
+  inset: auto 8px 8px 8px !important;
+  min-height: 0 !important;
+  max-height: calc(100% - 16px) !important;
+  padding: 11px 13px !important;
+  gap: 5px !important;
+  background: rgba(246, 243, 235, 0.92) !important;
+  border-color: rgba(75, 67, 137, 0.22) !important;
+  box-shadow: 0 4px 18px rgba(24, 25, 35, 0.16) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.nydn-limited.nydn-display-blur > .nydn-limit-card strong {
+  font-size: 13px !important;
+}
+
+/* Never let a filtered X item change the timeline's measured geometry. Lock
+   both the tweet and X's virtualized cell to their pre-filter dimensions. */
+[data-testid="cellInnerDiv"].nydn-twitter-cell-locked {
+  box-sizing: border-box !important;
+  height: var(--nydn-locked-cell-height) !important;
+  min-height: var(--nydn-locked-cell-height) !important;
+  max-height: var(--nydn-locked-cell-height) !important;
+  overflow: hidden !important;
+  transition: none !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked {
+  box-sizing: border-box !important;
+  height: var(--nydn-locked-height) !important;
+  min-height: var(--nydn-locked-height) !important;
+  max-height: var(--nydn-locked-height) !important;
+  overflow: hidden !important;
+  transition: none !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked > .nydn-verdict {
+  transition: none !important;
+  transform: none !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-display-hide > .nydn-limit-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-areas:
+    "eyebrow actions"
+    "heading actions"
+    "detail actions" !important;
+  align-content: center !important;
+  align-items: center !important;
+  gap: 3px 16px !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  padding: 12px 16px !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-display-hide > .nydn-limit-card > .nydn-eyebrow {
+  grid-area: eyebrow !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-display-hide > .nydn-limit-card > strong {
+  grid-area: heading !important;
+  font-size: 14px !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-display-hide > .nydn-limit-card > .nydn-detail {
+  grid-area: detail !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-display-hide > .nydn-limit-card > .nydn-actions {
+  grid-area: actions !important;
+  flex-wrap: nowrap !important;
+  margin-top: 0 !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-reviewing > .nydn-review-bar {
+  max-height: calc(100% - 16px) !important;
+  overflow: hidden !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-reviewing > .nydn-review-bar > .nydn-detail {
+  display: block !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+article[data-testid="tweet"].nydn-twitter-locked.nydn-reviewing > .nydn-review-bar > .nydn-actions {
+  flex-wrap: nowrap !important;
+}
+
+.nydn-reviewing {
+  min-height: 154px !important;
+  overflow: hidden !important;
+  border-radius: 14px !important;
+  outline: 2px solid rgba(103, 88, 223, 0.32) !important;
+  outline-offset: 2px !important;
+}
+
+.nydn-reviewing > :not(.nydn-verdict) {
+  filter: none !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.nydn-review-bar {
+  position: absolute !important;
+  z-index: 2147483646 !important;
+  inset: auto 8px 8px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 5px !important;
+  padding: 11px 13px !important;
+  color: #1f2230 !important;
+  background: rgba(246, 243, 235, 0.94) !important;
+  border: 1px solid rgba(75, 67, 137, 0.25) !important;
+  border-radius: 11px !important;
+  box-shadow: 0 4px 18px rgba(24, 25, 35, 0.18) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.nydn-limit-card strong,
+.nydn-review-bar strong {
   color: #1f2230 !important;
   font-size: 16px !important;
   font-weight: 700 !important;
   line-height: 1.25 !important;
+}
+
+.nydn-review-bar strong {
+  font-size: 13px !important;
 }
 
 .nydn-eyebrow {
@@ -95,6 +230,7 @@
 
 .nydn-actions {
   display: flex !important;
+  flex-wrap: wrap !important;
   gap: 8px !important;
   margin-top: 3px !important;
 }
