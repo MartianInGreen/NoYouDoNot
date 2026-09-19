@@ -28,7 +28,7 @@ export function createChatService(config, options = {}) {
           model: config.model,
           messages: [{ role: "system", content: system }, ...history],
           temperature: 0.45,
-          max_tokens: 220
+          max_tokens: 4096
         }),
         signal: controller.signal
       });
