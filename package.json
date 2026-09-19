@@ -1,0 +1,28 @@
+{
+  "name": "no-you-do-not",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A Firefox extension that uses TypeSafe Jev to turn natural-language intentions into browsing interventions.",
+  "scripts": {
+    "start": "node server/index.mjs",
+    "dev:firefox": "web-ext run --source-dir extension",
+    "lint": "web-ext lint --source-dir extension --warnings-as-errors && node scripts/validate.mjs",
+    "test": "node --test",
+    "check": "npm run lint && npm test",
+    "build": "web-ext build --source-dir extension --artifacts-dir artifacts --overwrite-dest"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "0.6.0",
+    "dotenv": "^17.2.3"
+  },
+  "devDependencies": {
+    "web-ext": "^10.6.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "overrides": {
+    "image-size": "2.0.4"
+  }
+}

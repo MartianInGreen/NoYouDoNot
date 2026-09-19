@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "No You Do Not",
+  "short_name": "NYDN",
+  "version": "0.1.0",
+  "description": "Use natural-language intentions and Jev judgments to browse deliberately.",
+  "icons": {
+    "48": "assets/icon-48.png",
+    "96": "assets/icon-96.png"
+  },
+  "action": {
+    "default_title": "No You Do Not",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "48": "assets/icon-48.png",
+      "96": "assets/icon-96.png"
+    }
+  },
+  "background": {
+    "scripts": ["background/background.js"],
+    "type": "module"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "permissions": [
+    "alarms",
+    "idle",
+    "storage",
+    "tabs",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "*://*.youtube.com/*",
+    "*://x.com/*",
+    "*://*.x.com/*",
+    "*://twitter.com/*",
+    "*://*.twitter.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://x.com/*",
+        "*://*.x.com/*",
+        "*://twitter.com/*",
+        "*://*.twitter.com/*"
+      ],
+      "js": ["content/feed.js"],
+      "css": ["content/feed.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "no-you-do-not@local",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": [
+          "browsingActivity",
+          "websiteContent",
+          "personalCommunications"
+        ]
+      }
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

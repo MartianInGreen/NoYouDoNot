@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pause — No You Do Not</title>
+    <link rel="stylesheet" href="gate.css" />
+  </head>
+  <body>
+    <div class="ambient one"></div><div class="ambient two"></div>
+    <main>
+      <header><div class="brand-mark">N</div><span>No You Do Not</span><button id="settings" type="button">Settings</button></header>
+      <section class="gate-card" id="gate-card" hidden>
+        <div class="verdict-icon" id="verdict-icon">◇</div>
+        <p class="eyebrow" id="eyebrow">A MOMENT OF CHOICE</p>
+        <h1 id="heading">Is this what you meant to do?</h1>
+        <p class="visit"><strong id="hostname"></strong><span id="title"></span></p>
+        <div class="signal-row">
+          <div><span>INTENT FIT</span><strong id="fit">—</strong></div>
+          <div><span>DESTINATION</span><strong id="kind">—</strong></div>
+          <div><span>CONFIDENCE</span><strong id="confidence">—</strong></div>
+        </div>
+        <p class="explanation" id="explanation"></p>
+
+        <section class="intent-reminder" id="intent-reminder">
+          <span>YOU ASKED TO REMEMBER</span>
+          <blockquote id="intent-text"></blockquote>
+        </section>
+
+        <section class="chat" id="chat" hidden>
+          <div class="chat-heading"><div><span>REFLECTION BARRIER</span><h2>Make the reason explicit</h2></div><div class="progress" id="progress"></div></div>
+          <div class="messages" id="messages" aria-live="polite"></div>
+          <form id="chat-form">
+            <label for="chat-input">Your answer</label>
+            <div class="composer"><textarea id="chat-input" rows="2" maxlength="1800" placeholder="I came here because…" required></textarea><button id="send" type="submit">Send</button></div>
+            <small id="chat-hint">A concrete sentence, not a password or private information.</small>
+          </form>
+        </section>
+
+        <div class="gate-actions">
+          <button id="leave" class="secondary" type="button">Close this tab</button>
+          <button id="continue" class="primary" type="button" disabled>Continue intentionally</button>
+        </div>
+        <button id="fallback" class="fallback" type="button" hidden>LLM unavailable — continue for 5 minutes</button>
+      </section>
+
+      <section class="gate-card loading" id="loading"><div class="spinner">◇</div><h1>Checking the intention…</h1></section>
+      <section class="gate-card error-card" id="error" hidden><div class="verdict-icon">!</div><h1>This pause has expired.</h1><p id="error-text">The original tab may have been closed or resumed.</p><button id="error-close" class="secondary" type="button">Close tab</button></section>
+    </main>
+    <script type="module" src="gate.js"></script>
+  </body>
+</html>

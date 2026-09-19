@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No You Do Not</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-mark">N</div>
+      <div>
+        <p class="eyebrow">INTENTIONAL BROWSING</p>
+        <h1>No You Do Not</h1>
+      </div>
+      <label class="switch" title="Enable or pause the extension">
+        <input id="enabled" type="checkbox" />
+        <span></span>
+      </label>
+    </header>
+
+    <main>
+      <section class="site-card">
+        <div class="site-heading">
+          <div class="site-icon" id="site-icon">•</div>
+          <div class="site-copy">
+            <p id="hostname">No website selected</p>
+            <span id="title">Open a web page to see its activity.</span>
+          </div>
+          <span class="status-pill" id="status">—</span>
+        </div>
+        <div class="metrics">
+          <div><strong id="time">0m</strong><span>today</span></div>
+          <div><strong id="opens">0</strong><span>opens</span></div>
+          <div><strong id="fit">—</strong><span>intent fit</span></div>
+        </div>
+        <p class="decision-note" id="decision-note">No Jev judgment for this site yet.</p>
+      </section>
+
+      <div class="actions">
+        <button id="pause-site" class="secondary" type="button">Allow here for 15m</button>
+        <button id="dashboard" class="primary" type="button">Open dashboard</button>
+      </div>
+
+      <section class="connection" id="connection">
+        <span class="dot"></span>
+        <span id="connection-text">Checking local bridge…</span>
+      </section>
+    </main>
+
+    <footer>
+      <span>Tracking counts only active, non-idle tab time.</span>
+      <button id="settings" type="button" aria-label="Open settings">⚙</button>
+    </footer>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

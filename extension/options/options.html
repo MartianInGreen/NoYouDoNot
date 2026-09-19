@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>No You Do Not — Dashboard</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">N</div>
+        <div><strong>No You Do Not</strong><span>Browse on purpose</span></div>
+      </div>
+      <nav aria-label="Dashboard sections">
+        <a href="#overview" class="active"><span>◫</span> Overview</a>
+        <a href="#intentions"><span>◎</span> Intentions</a>
+        <a href="#algorithms"><span>◇</span> Your algorithms</a>
+        <a href="#boundaries"><span>◒</span> Boundaries</a>
+        <a href="#connection"><span>⌁</span> AI connection</a>
+        <a href="#data"><span>□</span> Data & privacy</a>
+      </nav>
+      <div class="sidebar-note">
+        <span class="status-dot" id="sidebar-dot"></span>
+        <div><strong id="sidebar-status">Checking bridge</strong><small id="sidebar-model">Jev</small></div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="page-header">
+        <div>
+          <p class="kicker">PERSONAL ATTENTION SYSTEM</p>
+          <h1>Make the web answer to your intent.</h1>
+          <p>Describe the life you want, then let semantic judgments handle the gray areas.</p>
+        </div>
+        <div class="header-actions">
+          <label class="master-toggle"><input id="enabled" type="checkbox" /><span></span> Active</label>
+          <button id="save" class="primary" type="button">Save changes</button>
+        </div>
+      </header>
+
+      <section id="overview" class="section">
+        <div class="section-heading">
+          <div><p class="kicker">OVERVIEW</p><h2>Your attention, in context</h2></div>
+          <div class="segmented" role="group" aria-label="Statistics period">
+            <button type="button" data-period="1" class="selected">Today</button>
+            <button type="button" data-period="7">7 days</button>
+          </div>
+        </div>
+        <div class="summary-grid">
+          <article class="summary-card accent-purple"><span>ACTIVE WEB TIME</span><strong id="summary-time">0m</strong><small>focused, non-idle tabs</small></article>
+          <article class="summary-card accent-blue"><span>SITE OPENS</span><strong id="summary-opens">0</strong><small>new visits across domains</small></article>
+          <article class="summary-card accent-orange"><span>INTERVENTIONS</span><strong id="summary-interventions">0</strong><small>moments of reflection</small></article>
+          <article class="summary-card accent-green"><span>FEED ITEMS LIMITED</span><strong id="summary-filtered">0</strong><small>on YouTube and X</small></article>
+        </div>
+        <div class="overview-grid">
+          <article class="panel">
+            <div class="panel-title"><h3>Where your time went</h3><span id="site-count">0 sites</span></div>
+            <div id="site-chart" class="site-chart empty-state">No browsing activity recorded yet.</div>
+          </article>
+          <article class="panel">
+            <div class="panel-title"><h3>Recent judgments</h3><span>Jev → policy</span></div>
+            <div id="recent-decisions" class="decision-list empty-state">No decisions yet.</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="intentions" class="section">
+        <div class="section-heading">
+          <div><p class="kicker">INTENTIONS</p><h2>Say what “useful” means to you</h2><p>These descriptions are context for Jev, not brittle URL rules.</p></div>
+        </div>
+        <div class="intent-grid">
+          <label class="field-card field-card-wide">
+            <span><b>Always</b><small>Your durable philosophy for using the web.</small></span>
+            <textarea id="always-intent" rows="4" placeholder="I use the web deliberately…"></textarea>
+          </label>
+          <label class="field-card">
+            <span><b>Today</b><small id="daily-label">Only active today.</small></span>
+            <textarea id="daily-intent" rows="4" placeholder="Today I want to finish…"></textarea>
+          </label>
+          <label class="field-card">
+            <span><b>This week</b><small id="weekly-label">Only active this ISO week.</small></span>
+            <textarea id="weekly-intent" rows="4" placeholder="This week I am prioritizing…"></textarea>
+          </label>
+        </div>
+        <div class="subheading-row"><div><h3>Project intentions</h3><p>Activate only the projects that matter right now.</p></div><button id="add-project" class="secondary" type="button">+ Add project</button></div>
+        <div id="project-list" class="project-list"></div>
+      </section>
+
+      <section id="algorithms" class="section">
+        <div class="section-heading">
+          <div><p class="kicker">YOUR ALGORITHMS</p><h2>Replace the engagement objective</h2><p>Visible posts and videos are classified against your words. Feedback becomes examples for the next judgment.</p></div>
+        </div>
+        <div class="algorithm-grid">
+          <article class="algorithm-card youtube-card">
+            <div class="algorithm-header"><div class="platform-icon youtube">▶</div><div><h3>YouTube</h3><p>Videos, recommendations, and Shorts</p></div><label class="mini-toggle"><input id="youtube-enabled" type="checkbox" /><span></span></label></div>
+            <label class="stacked-field"><span>What should your YouTube recommend?</span><textarea id="youtube-intent" rows="7"></textarea></label>
+            <div class="two-fields">
+              <label><span>When limited</span><select id="youtube-display"><option value="blur">Blur with explanation</option><option value="hide">Hide behind a card</option><option value="badge">Badge only</option></select></label>
+              <label><span>Strictness</span><select id="youtube-strictness"><option value="lenient">Lenient</option><option value="balanced">Balanced</option><option value="strict">Strict</option></select></label>
+            </div>
+            <label class="range-field"><span>Act above <output id="youtube-threshold-output">60%</output> confidence</span><input id="youtube-threshold" type="range" min="50" max="95" step="1" /></label>
+            <p class="feedback-count" id="youtube-feedback">0 feedback examples</p>
+          </article>
+
+          <article class="algorithm-card twitter-card">
+            <div class="algorithm-header"><div class="platform-icon twitter">𝕏</div><div><h3>X / Twitter</h3><p>Timeline posts and recommendations</p></div><label class="mini-toggle"><input id="twitter-enabled" type="checkbox" /><span></span></label></div>
+            <label class="stacked-field"><span>What should your timeline prioritize?</span><textarea id="twitter-intent" rows="7"></textarea></label>
+            <div class="two-fields">
+              <label><span>When limited</span><select id="twitter-display"><option value="blur">Blur with explanation</option><option value="hide">Hide behind a card</option><option value="badge">Badge only</option></select></label>
+              <label><span>Strictness</span><select id="twitter-strictness"><option value="lenient">Lenient</option><option value="balanced">Balanced</option><option value="strict">Strict</option></select></label>
+            </div>
+            <label class="range-field"><span>Act above <output id="twitter-threshold-output">60%</output> confidence</span><input id="twitter-threshold" type="range" min="50" max="95" step="1" /></label>
+            <p class="feedback-count" id="twitter-feedback">0 feedback examples</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="boundaries" class="section">
+        <div class="section-heading"><div><p class="kicker">BOUNDARIES</p><h2>Choose how the extension responds</h2><p>Jev judges meaning. Deterministic settings decide the consequence.</p></div></div>
+        <div class="settings-panel">
+          <label class="setting-row"><span><b>Enforcement style</b><small>Observe records only; balanced nudges drift; strict requires reflection more often.</small></span><select id="enforcement"><option value="observe">Observe only</option><option value="balanced">Balanced</option><option value="strict">Strict</option></select></label>
+          <label class="setting-row"><span><b>LLM reflection barrier</b><small>For conflicting visits, talk through why you still want to continue.</small></span><input id="intervention-enabled" type="checkbox" class="check" /></label>
+          <label class="setting-row"><span><b>Required user messages</b><small>Each must be a meaningful sentence. A provider outage offers a visible fail-open.</small></span><select id="minimum-turns"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+          <label class="setting-row"><span><b>Site confidence threshold</b><small>Low-confidence judgments always fail open.</small></span><div class="inline-range"><input id="site-threshold" type="range" min="50" max="95" step="1" /><output id="site-threshold-output">62%</output></div></label>
+          <label class="setting-row"><span><b>Temporary allowance</b><small>How long a successfully explained visit remains available.</small></span><select id="grant-minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select></label>
+          <label class="setting-row setting-column"><span><b>Never interrupt these domains</b><small>Safety exceptions for tools that should stay available. One domain per line; subdomains are included.</small></span><textarea id="protected-domains" rows="5" spellcheck="false"></textarea></label>
+        </div>
+      </section>
+
+      <section id="connection" class="section">
+        <div class="section-heading"><div><p class="kicker">AI CONNECTION</p><h2>Keep provider keys out of Firefox</h2><p>The extension talks only to a token-protected bridge on your own machine.</p></div></div>
+        <div class="connection-panel">
+          <div class="connection-copy"><div class="large-status" id="connection-icon">⌁</div><div><h3 id="connection-title">Local bridge</h3><p id="connection-description">Enter the bridge details from your .env file, then test the connection.</p></div></div>
+          <div class="connection-fields">
+            <label><span>Bridge URL</span><input id="bridge-url" type="url" spellcheck="false" /></label>
+            <label><span>Bridge token</span><input id="bridge-token" type="password" autocomplete="off" spellcheck="false" /></label>
+          </div>
+          <div class="connection-actions"><button id="test-bridge" class="secondary" type="button">Test connection</button><a href="https://console.typesafe.ai" target="_blank" rel="noreferrer">Get a TypeSafe key ↗</a></div>
+          <p class="privacy-callout">Only hostname, path without query parameters, page title, active intent, and computed usage totals go to Jev. Feed classification sends visible post/video metadata. Intervention text goes to the LLM you configure.</p>
+        </div>
+      </section>
+
+      <section id="data" class="section">
+        <div class="section-heading"><div><p class="kicker">DATA & PRIVACY</p><h2>Your history stays local</h2><p>Activity, decisions, and feedback are stored in Firefox and retained for up to 90 days.</p></div></div>
+        <div class="data-actions">
+          <article><h3>Export your data</h3><p>Download settings, aggregate activity, Jev results, and feedback. The bridge token is redacted.</p><button id="export-data" class="secondary" type="button">Export JSON</button></article>
+          <article class="danger-zone"><h3>Clear activity</h3><p>Delete activity, judgments, classifier cache, and feedback. Your intentions and connection settings remain.</p><button id="clear-data" class="danger" type="button">Clear local activity</button></article>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
