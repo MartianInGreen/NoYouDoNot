@@ -2,6 +2,13 @@
 
 A local-first Firefox extension for controlling browsing with **natural-language intentions**, rather than a growing list of brittle URL rules.
 
+<img width="2240" height="1311" alt="annotate-2026-09-19_12-20-54" src="https://github.com/user-attachments/assets/e213cc1c-698e-4802-9bc5-58e3fa9bee1e" />
+
+<img width="2241" height="1314" alt="image" src="https://github.com/user-attachments/assets/3fee9446-f0c6-43d2-ad56-0630857b334c" />
+
+<img width="2248" height="1313" alt="image" src="https://github.com/user-attachments/assets/93517c0e-76df-4f11-8560-ba76fa912e2e" />
+
+
 [TypeSafe Jev](https://typesafe.ai) makes fast, typed semantic judgments about a visit or feed item. Ordinary code keeps time, applies confidence thresholds, and decides whether to allow, nudge, ask for reflection, or block. An optional generative LLM handles the conversational intervention that Jev is not designed to provide.
 
 ## What is implemented
