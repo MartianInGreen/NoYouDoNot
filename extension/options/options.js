@@ -16,7 +16,8 @@ const controls = {
   projectList: byId("project-list"),
   enforcement: byId("enforcement"),
   interventionEnabled: byId("intervention-enabled"),
-  minimumTurns: byId("minimum-turns"),
+  conflictWaitBase: byId("conflict-wait-base"),
+  conflictWaitMax: byId("conflict-wait-max"),
   siteThreshold: byId("site-threshold"),
   grantMinutes: byId("grant-minutes"),
   protectedDomains: byId("protected-domains"),
@@ -81,7 +82,8 @@ function populateForm() {
 
   controls.enforcement.value = settings.sitePolicy.enforcement;
   controls.interventionEnabled.checked = settings.sitePolicy.interventionEnabled;
-  controls.minimumTurns.value = String(settings.sitePolicy.minimumChatTurns);
+  controls.conflictWaitBase.value = String(settings.sitePolicy.conflictWaitBaseSeconds);
+  controls.conflictWaitMax.value = String(settings.sitePolicy.conflictWaitMaxSeconds);
   controls.siteThreshold.value = String(Math.round(settings.sitePolicy.confidenceThreshold * 100));
   controls.grantMinutes.value = String(settings.sitePolicy.grantMinutes);
   controls.protectedDomains.value = settings.sitePolicy.protectedDomains.join("\n");
@@ -117,7 +119,8 @@ function collectSettings() {
     ...next.sitePolicy,
     enforcement: controls.enforcement.value,
     interventionEnabled: controls.interventionEnabled.checked,
-    minimumChatTurns: Number(controls.minimumTurns.value),
+    conflictWaitBaseSeconds: controls.conflictWaitBase.valueAsNumber,
+    conflictWaitMaxSeconds: controls.conflictWaitMax.valueAsNumber,
     confidenceThreshold: Number(controls.siteThreshold.value) / 100,
     grantMinutes: Number(controls.grantMinutes.value),
     protectedDomains: controls.protectedDomains.value
@@ -152,6 +155,8 @@ async function save() {
   if (!response?.ok) return toast(response?.error || "Could not save settings.", true);
   settings = mergeSettings(response.settings);
   projects = settings.projects.map((project) => ({ ...project }));
+  controls.conflictWaitBase.value = String(settings.sitePolicy.conflictWaitBaseSeconds);
+  controls.conflictWaitMax.value = String(settings.sitePolicy.conflictWaitMaxSeconds);
   toast("Changes saved. New judgments will use your updated intent.");
   await refreshConnection();
 }
@@ -218,8 +223,10 @@ function renderDecisions() {
   list.className = "decision-list";
   list.replaceChildren(
     ...decisions.map((decision) => {
-      const fit = String(decision.decision?.intentFit?.choice || "unknown").replaceAll("_", " ");
-      const confidence = Math.round(Number(decision.decision?.intentFit?.confidence || 0) * 100);
+      const effectivePolicy = decision.decision?.effectivePolicy;
+      const judgment = effectivePolicy || decision.decision?.intentFit;
+      const fit = String(judgment?.choice || "unknown").replaceAll("_", " ");
+      const confidence = Math.round(Number(judgment?.confidence || 0) * 100);
       const action = decision.outcome?.action || "allow";
       const reason = String(decision.outcome?.reason || "unknown").replaceAll("_", " ");
       const row = makeElement("div", "decision-item");

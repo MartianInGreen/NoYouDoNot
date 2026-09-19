@@ -19,13 +19,13 @@ test("reflection service uses an OpenAI-compatible endpoint and a bounded prompt
   const result = await service.chat({
     visit: { hostname: "youtube.com", title: "Home" },
     intents: { always: "Avoid automatic scrolling", projects: [] },
-    minimumTurns: 3,
-    completedTurns: 1,
     messages: [{ role: "user", content: "I want one tutorial for my project." }]
   });
 
   assert.equal(request.url, "http://localhost:11434/v1/chat/completions");
   assert.equal(request.body.messages[0].role, "system");
   assert.match(request.body.messages[0].content, /Do not shame/);
+  assert.match(request.body.messages[0].content, /after every exchange, Jev independently judges/i);
+  assert.doesNotMatch(request.body.messages[0].content, /after \d+ user turns/i);
   assert.equal(result.reply, "What will tell you it is time to stop?");
 });

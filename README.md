@@ -35,7 +35,7 @@ A local-first Firefox extension for controlling browsing with **natural-language
 - **Semantic site decisions** — Jev classifies each visit as supporting, purposeful, intentional leisure, likely drift, or conflicting. It also classifies the destination as a useful tool, mixed-use site, or attention sink.
 - **Confidence-gated consequences** — uncertain model results fail open. Observe, balanced, and strict policy modes turn typed judgments into deterministic behavior.
 - **YouTube and X/Twitter algorithms** — visible videos/posts are batch-classified for disposition, informative value, and topic fit. Items can be badged, blurred, or hidden. “Show once,” “Good filter,” and “Less like this” feedback becomes examples for later calls.
-- **Conversational intervention** — optionally require 2–6 meaningful messages with an OpenAI-compatible LLM before continuing. Provider outages have an explicit five-minute fail-open; the extension never silently traps a tab.
+- **Adaptive conversational intervention** — an OpenAI-compatible LLM conducts the reflection, while Jev weighs after every exchange whether the reason is sufficiently explained and whether it still conflicts with active intentions. Clear but conflicting reasons trigger a configurable, severity-scaled wait. Provider outages have an explicit five-minute fail-open.
 - **Editable safe destinations** — domains such as Notion and Google Docs are never interrupted by default.
 - **Local dashboard** — attention totals, recent Jev judgments, intent editors, algorithm controls, connection health, export, and deletion.
 
@@ -128,9 +128,10 @@ The extension computes exact time/open totals in code and sends Jev a small stat
 - named time-of-day bucket;
 - computed usage totals.
 
-One Jev call asks independent Choice, Noul, and Score questions, including a direct check for whether an active intention explicitly disallows the visit at the exact local time. The extension then applies this policy:
+One Jev call asks independent Choice, Noul, and Score questions. Before consequences are applied, Jev must reconcile the intention layers into one effective policy: specific carve-outs beat broader guidance unless an equally specific rule contradicts them, and timed restrictions are not extended beyond their stated window. The extension then applies this policy:
 
-- a sufficiently certain explicit restriction → chat when the barrier is enabled; otherwise nudge or block by mode;
+- a sufficiently certain specific allowance or an unrelated visit → allow;
+- a sufficiently certain specific restriction → chat when the barrier is enabled; otherwise nudge or block by mode;
 - supporting, evidenced-purposeful, or explicitly appropriate leisure → allow;
 - likely drift → nudge, or chat in strict mode;
 - conflict → chat when the barrier is enabled; otherwise nudge or block by mode;
@@ -150,7 +151,9 @@ Code combines those typed answers with confidence and strictness settings. Page 
 
 ### Intervention chat
 
-Jev does not generate prose, so it is not used as a chatbot. The optional LLM asks for a concrete purpose, why it matters now, and a stopping point. The minimum turn count is enforced by the background script, not left to the model.
+Jev does not generate prose, so the optional LLM asks for a concrete purpose, why it matters now, and—on open-ended destinations—a stopping point. There is no fixed turn count. After each user message and LLM response, Jev returns two independent weights: whether the reason has been explained well and whether that reason still conflicts with the active intentions.
+
+Once the explanation weight reaches the configured Jev action threshold, the user can continue. If the conflict weight is also above that threshold, a prominent warning appears and code enforces a wait. The wait scales linearly from the configurable base (15 seconds by default) to the configurable maximum (120 seconds by default) as the conflict weight rises from the threshold to 1. Provider failures retain the visible five-minute fail-open.
 
 ## Commands
 
@@ -184,7 +187,7 @@ test/               policy, time, Jev shape, LLM, and HTTP tests
 - `idle`, `alarms`: count focused, non-idle time without relying on a permanently running page.
 - `storage`: keep local settings and aggregate history.
 - Host access is limited to localhost plus YouTube, X, and Twitter. The latter three are needed for feed content scripts.
-- Firefox's built-in consent declares `browsingActivity`, `websiteContent`, and `personalCommunications`, because the user-directed workflow transmits visit metadata/feed cards to Jev and reflection text to the configured LLM. There is no project-operated telemetry.
+- Firefox's built-in consent declares `browsingActivity`, `websiteContent`, and `personalCommunications`, because the user-directed workflow transmits visit metadata/feed cards to Jev and reflection text to both the configured LLM and Jev's follow-up evaluator. There is no project-operated telemetry.
 
 ## Current limitations
 

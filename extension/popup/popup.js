@@ -90,18 +90,47 @@ function render(data) {
     likely_drift: "drift",
     conflicts: "conflict"
   };
-  const label = labels[fit.choice] || fit.choice;
+  const effectivePolicy = decision.decision.effectivePolicy;
+  const displayedFit =
+    effectivePolicy?.choice === "general_guidance" &&
+    fit.choice === "conflicts" &&
+    decision.outcome.reason === "likely_drift"
+      ? "likely_drift"
+      : fit.choice;
+  const label = labels[displayedFit] || displayedFit;
   const confidence = Math.round((fit.confidence || 0) * 100);
   const threshold = Math.round((data.siteConfidenceThreshold || 0.62) * 100);
-  elements.fit.textContent = `${confidence}%`;
-  elements.status.textContent = label;
-  elements.status.className = `status-pill ${statusClass(fit.choice)}`;
+  const policyLabels = {
+    specific_allowance: "carve-out",
+    specific_restriction: "restriction",
+    general_guidance: label,
+    not_covered: "not covered",
+    ambiguous: "uncertain"
+  };
+  const policyIsUncertain = decision.outcome.reason === "uncertain_effective_policy";
+  const displayedLabel = policyIsUncertain
+    ? "uncertain"
+    : policyLabels[effectivePolicy?.choice] || label;
+  const displayedConfidence = effectivePolicy?.choice
+    ? Math.round((effectivePolicy.confidence || 0) * 100)
+    : confidence;
+  elements.fit.textContent = `${displayedConfidence}%`;
+  elements.status.textContent = displayedLabel;
+  elements.status.className = `status-pill ${
+    policyIsUncertain ? "" : statusClassForPolicy(effectivePolicy?.choice, displayedFit)
+  }`;
   const siteKind = String(decision.decision.siteKind?.choice || "site").replaceAll("_", " ");
-  if (decision.outcome.reason === "explicit_restriction") {
+  if (decision.outcome.reason === "specific_restriction") {
+    elements.note.textContent = `After applying specific carve-outs, an active restriction still applies now (${displayedConfidence}% confidence). Action: ${decision.outcome.action}.`;
+  } else if (decision.outcome.reason === "explicit_restriction") {
     const restriction = Math.round(Number(decision.decision.explicitlyDisallowed || 0) * 100);
     elements.note.textContent = `An active intention explicitly disallows this visit now (${restriction}% match). Action: ${decision.outcome.action}.`;
-  } else if (decision.outcome.reason === "low_confidence") {
-    elements.note.textContent = `Jev marked this visit “${label},” but ${confidence}% classification confidence is below your ${threshold}% threshold, so no interruption was applied.`;
+  } else if (["specific_allowance", "not_covered_by_intentions", "ambiguous_intentions"].includes(decision.outcome.reason)) {
+    const localTime = decision.decision.evaluatedLocalTime;
+    const atTime = localTime ? ` at ${localTime}` : "";
+    elements.note.textContent = `Jev reconciled the active intentions${atTime}: ${displayedLabel}. No interruption was applied.`;
+  } else if (["low_confidence", "uncertain_effective_policy"].includes(decision.outcome.reason)) {
+    elements.note.textContent = `The effective policy was below your ${threshold}% threshold, so no interruption was applied.`;
   } else if (["supports", "purposeful", "intentional_leisure"].includes(decision.outcome.reason)) {
     elements.note.textContent = `Jev marked this visit “${label}” (${confidence}% confidence). That classification allows the visit; the threshold only gates potential interruptions.`;
   } else {
@@ -123,6 +152,13 @@ async function checkBridge(configured) {
     elements.connection.className = "connection offline";
     elements.connectionText.textContent = response?.error || "Jev is not configured";
   }
+}
+
+function statusClassForPolicy(policy, fit) {
+  if (policy === "specific_allowance" || policy === "not_covered") return "good";
+  if (policy === "specific_restriction") return "stop";
+  if (policy === "ambiguous") return "";
+  return statusClass(fit);
 }
 
 function statusClass(choice) {

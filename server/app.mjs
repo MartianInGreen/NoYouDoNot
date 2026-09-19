@@ -57,6 +57,8 @@ export function createRequestHandler({ config, jev, chat, logger = console }) {
       let result;
       if (url.pathname === "/v1/classify/site") {
         result = await jev.classifySite(body);
+      } else if (url.pathname === "/v1/classify/intervention") {
+        result = await jev.evaluateIntervention(body);
       } else if (url.pathname === "/v1/classify/feed") {
         result = await jev.classifyFeed(body);
       } else if (url.pathname === "/v1/intervention/chat") {

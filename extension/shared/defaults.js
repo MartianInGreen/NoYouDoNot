@@ -11,7 +11,8 @@ export const DEFAULT_SETTINGS = {
     enforcement: "balanced",
     confidenceThreshold: 0.62,
     interventionEnabled: true,
-    minimumChatTurns: 3,
+    conflictWaitBaseSeconds: 15,
+    conflictWaitMaxSeconds: 120,
     grantMinutes: 15,
     protectedDomains: [
       "notion.so",
@@ -75,13 +76,16 @@ export function clone(value) {
 
 export function mergeSettings(value = {}) {
   const input = value && typeof value === "object" ? value : {};
+  const sitePolicy = { ...DEFAULT_SETTINGS.sitePolicy, ...(input.sitePolicy || {}) };
+  // Drop the retired fixed-turn setting when older installations are merged.
+  delete sitePolicy.minimumChatTurns;
   return {
     ...clone(DEFAULT_SETTINGS),
     ...input,
     dailyIntent: { ...DEFAULT_SETTINGS.dailyIntent, ...(input.dailyIntent || {}) },
     weeklyIntent: { ...DEFAULT_SETTINGS.weeklyIntent, ...(input.weeklyIntent || {}) },
     projects: Array.isArray(input.projects) ? input.projects : [],
-    sitePolicy: { ...DEFAULT_SETTINGS.sitePolicy, ...(input.sitePolicy || {}) },
+    sitePolicy,
     algorithms: {
       youtube: {
         ...DEFAULT_SETTINGS.algorithms.youtube,

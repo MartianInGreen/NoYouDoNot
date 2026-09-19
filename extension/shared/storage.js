@@ -63,8 +63,16 @@ export function sanitizeSettings(candidate) {
     : "balanced";
   value.sitePolicy.confidenceThreshold = clamp(value.sitePolicy.confidenceThreshold, 0.5, 0.95, 0.62);
   value.sitePolicy.interventionEnabled = Boolean(value.sitePolicy.interventionEnabled);
-  value.sitePolicy.minimumChatTurns = Math.round(
-    clamp(value.sitePolicy.minimumChatTurns, 2, 6, 3)
+  value.sitePolicy.conflictWaitBaseSeconds = Math.round(
+    clamp(value.sitePolicy.conflictWaitBaseSeconds, 1, 300, 15)
+  );
+  value.sitePolicy.conflictWaitMaxSeconds = Math.round(
+    clamp(
+      value.sitePolicy.conflictWaitMaxSeconds,
+      value.sitePolicy.conflictWaitBaseSeconds,
+      1800,
+      Math.max(120, value.sitePolicy.conflictWaitBaseSeconds)
+    )
   );
   value.sitePolicy.grantMinutes = Math.round(clamp(value.sitePolicy.grantMinutes, 5, 120, 15));
   value.sitePolicy.protectedDomains = [

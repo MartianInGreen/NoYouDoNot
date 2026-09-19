@@ -105,7 +105,7 @@ h3 { margin: 0; font-size: 13px; }
 .field-card > span { display: flex; align-items: baseline; justify-content: space-between; gap: 15px; }
 .field-card b { font: 700 15px/1 Georgia, serif; }
 .field-card small { color: var(--muted); font-size: 9px; }
-textarea, input[type="url"], input[type="password"] { width: 100%; color: var(--ink); border: 1px solid rgba(33,35,46,.14); border-radius: 9px; background: #faf8f2; resize: vertical; }
+textarea, input[type="url"], input[type="password"], input[type="number"] { width: 100%; color: var(--ink); border: 1px solid rgba(33,35,46,.14); border-radius: 9px; background: #faf8f2; resize: vertical; }
 textarea { min-height: 94px; margin-top: 13px; padding: 12px; font-size: 11px; line-height: 1.55; }
 textarea:focus, input:focus, select:focus { border-color: rgba(104,89,223,.6); }
 .subheading-row { display: flex; align-items: center; justify-content: space-between; margin: 29px 0 13px; }
@@ -148,6 +148,9 @@ select { width: 100%; min-height: 35px; padding: 0 28px 0 9px; color: var(--ink)
 .setting-row b, .setting-row small { display: block; }
 .setting-row b { font-size: 11px; } .setting-row small { margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.4; }
 .setting-row select { width: 180px; flex: none; }
+.number-field { display: flex; align-items: center; gap: 8px; width: 180px; flex: none; }
+.number-field input { height: 35px; padding: 0 9px; font-size: 10px; }
+.setting-row .number-field small { margin: 0; white-space: nowrap; }
 .check { width: 18px; height: 18px; accent-color: var(--purple); }
 .inline-range { display: flex; align-items: center; gap: 9px; width: 220px; }
 .inline-range input { flex: 1; accent-color: var(--purple); } .inline-range output { width: 34px; color: var(--purple-dark); font-size: 10px; font-weight: 750; }

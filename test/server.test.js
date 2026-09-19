@@ -15,6 +15,11 @@ async function withServer(run) {
   const jev = {
     configured: true,
     classifySite: async (body) => ({ intentFit: { choice: "supports" }, echoed: body.page.hostname }),
+    evaluateIntervention: async (body) => ({
+      reasonExplained: 0.82,
+      reasonConflicts: 0.71,
+      echoed: body.visit.hostname
+    }),
     classifyFeed: async (body) => ({ results: body.items })
   };
   const chat = { configured: true, chat: async () => ({ reply: "What is your stopping point?" }) };
@@ -62,6 +67,26 @@ test("site endpoint accepts extension-origin JSON calls", async () => {
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("access-control-allow-origin"), "moz-extension://test-id");
     assert.equal((await response.json()).echoed, "example.com");
+  });
+});
+
+test("intervention endpoint returns both Jev weights", async () => {
+  await withServer(async (base) => {
+    const response = await fetch(`${base}/v1/classify/intervention`, {
+      method: "POST",
+      headers: {
+        origin: "moz-extension://test-id",
+        "content-type": "application/json",
+        "x-noyoudonot-token": token
+      },
+      body: JSON.stringify({ visit: { hostname: "example.com" }, messages: [] })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      reasonExplained: 0.82,
+      reasonConflicts: 0.71,
+      echoed: "example.com"
+    });
   });
 });
 

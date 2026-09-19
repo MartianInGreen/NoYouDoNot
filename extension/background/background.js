@@ -6,7 +6,9 @@ import {
   clone
 } from "../shared/defaults.js";
 import {
+  deriveConflictWaitSeconds,
   deriveFeedAction,
+  deriveInterventionAccess,
   deriveSiteAction,
   isProtectedDomain,
   isWebUrl,
@@ -28,7 +30,7 @@ const TRACKING_ALARM = "nydn-tracking-heartbeat";
 const CLEANUP_ALARM = "nydn-storage-cleanup";
 const MAX_TICK_SECONDS = 90;
 const SITE_CACHE_TTL_MS = 10 * 60 * 1000;
-const SITE_CLASSIFIER_VERSION = 2;
+const SITE_CLASSIFIER_VERSION = 3;
 const FEED_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DECISION_LIMIT = 250;
 const FEEDBACK_LIMIT = 80;
@@ -305,7 +307,10 @@ async function classifyNavigation(details) {
   );
   if (pendingEntry) {
     const [pendingId, pendingGate] = pendingEntry;
-    if (pendingGate.hostname === hostname) {
+    if (
+      pendingGate.hostname === hostname &&
+      pendingGate.classifierVersion === SITE_CLASSIFIER_VERSION
+    ) {
       await browser.tabs.update(tab.id, {
         url: browser.runtime.getURL(`gate/gate.html?id=${encodeURIComponent(pendingId)}`)
       });
@@ -432,21 +437,32 @@ function hasGrant(runtime, hostname) {
 
 async function createGate(tab, record, settings) {
   const gateId = crypto.randomUUID();
+  const createdAt = new Date();
   const gate = {
     id: gateId,
     tabId: tab.id,
-    createdAt: Date.now(),
+    classifierVersion: SITE_CLASSIFIER_VERSION,
+    createdAt: createdAt.getTime(),
     targetUrl: tab.url,
     hostname: record.hostname,
+    path: record.path,
     title: record.title,
     outcome: record.outcome,
     decision: record.decision,
-    minimumChatTurns: settings.sitePolicy.minimumChatTurns,
     grantMinutes: settings.sitePolicy.grantMinutes,
-    chatTurns: 0,
+    assessment: null,
+    warning: null,
     chatFailures: 0,
+    chatRevision: 0,
     messages: [],
-    intents: activeIntentSnapshot(settings)
+    intents: activeIntentSnapshot(settings, createdAt),
+    context: {
+      localTime: `${String(createdAt.getHours()).padStart(2, "0")}:${String(
+        createdAt.getMinutes()
+      ).padStart(2, "0")}`,
+      weekday: createdAt.toLocaleDateString([], { weekday: "long" }),
+      timeOfDay: timeBucket(createdAt)
+    }
   };
 
   await serialize(async () => {
@@ -719,6 +735,17 @@ async function getGate(id, sender) {
   return publicGate(gate);
 }
 
+function gateAssessmentState(gate, now = Date.now()) {
+  const state = deriveInterventionAccess(gate.assessment, gate.warning, now);
+  return {
+    assessment: gate.assessment || null,
+    ...state,
+    canContinue:
+      gate.outcome?.action === "nudge" ||
+      (gate.outcome?.action === "chat" && state.canContinue)
+  };
+}
+
 function publicGate(gate) {
   return {
     id: gate.id,
@@ -726,19 +753,18 @@ function publicGate(gate) {
     title: gate.title,
     outcome: gate.outcome,
     decision: gate.decision,
-    minimumChatTurns: gate.minimumChatTurns,
     grantMinutes: gate.grantMinutes,
-    chatTurns: gate.chatTurns,
-    chatFailures: gate.chatFailures,
+    chatFailures: Number(gate.chatFailures || 0),
     intents: gate.intents,
-    messages: gate.messages || []
+    messages: gate.messages || [],
+    ...gateAssessmentState(gate)
   };
 }
 
 async function chatAtGate(id, text, sender) {
   const cleanText = String(text || "").trim().slice(0, 1800);
-  if (cleanText.length < 12) {
-    throw new Error("Please explain your reason in at least a short sentence.");
+  if (!cleanText) {
+    throw new Error("Please enter a reason for this visit.");
   }
 
   const { runtimeState } = await browser.storage.local.get("runtimeState");
@@ -746,20 +772,27 @@ async function chatAtGate(id, text, sender) {
   if (!gate || (sender.tab?.id != null && sender.tab.id !== gate.tabId)) {
     throw new Error("This intervention has expired.");
   }
+  if (gate.outcome?.action !== "chat") {
+    throw new Error("This intervention does not require a conversation.");
+  }
+  if (gateAssessmentState(gate).reasonAccepted) {
+    throw new Error("This reflection is already complete.");
+  }
 
   const settings = await getSettings();
-  const history = [...(gate.messages || []), { role: "user", content: cleanText }].slice(-12);
+  const existingMessages = gate.messages || [];
+  const chatRevision = Number(gate.chatRevision || 0);
+  const history = [...existingMessages, { role: "user", content: cleanText }].slice(-20);
   let response;
   try {
     response = await bridgeRequest(
       settings,
       "/v1/intervention/chat",
       {
-        visit: { hostname: gate.hostname, title: gate.title },
+        visit: { hostname: gate.hostname, path: gate.path, title: gate.title },
         reason: gate.outcome.reason,
         intents: gate.intents,
-        minimumTurns: gate.minimumChatTurns,
-        completedTurns: gate.chatTurns,
+        context: gate.context,
         messages: history
       },
       { timeout: 30000 }
@@ -775,24 +808,89 @@ async function chatAtGate(id, text, sender) {
     throw new Error("The conversation model returned an empty reply.");
   }
 
+  const messages = [...history, { role: "assistant", content: reply }].slice(-20);
+  let evaluation;
+  try {
+    evaluation = await bridgeRequest(
+      settings,
+      "/v1/classify/intervention",
+      {
+        visit: { hostname: gate.hostname, path: gate.path, title: gate.title },
+        reason: gate.outcome.reason,
+        intents: gate.intents,
+        context: gate.context,
+        messages
+      },
+      { timeout: 20000 }
+    );
+    evaluation = {
+      reasonExplained: interventionWeight(evaluation.reasonExplained),
+      reasonConflicts: interventionWeight(evaluation.reasonConflicts),
+      model: String(evaluation.model || "").slice(0, 120)
+    };
+  } catch (error) {
+    await recordBridgeError(error);
+    const savedGate = await saveGateExchange(id, chatRevision, messages, {
+      assessment: null,
+      warning: null,
+      chatFailures: Number(gate.chatFailures || 0) + 1
+    });
+    return {
+      reply,
+      gate: publicGate(savedGate),
+      assessmentUnavailable: true
+    };
+  }
+
+  const threshold = Number(settings.sitePolicy.confidenceThreshold);
+  const evaluatedAt = Date.now();
+  const reasonAccepted = evaluation.reasonExplained >= threshold;
+  const warningRequired = reasonAccepted && evaluation.reasonConflicts >= threshold;
+  const waitSeconds = warningRequired
+    ? deriveConflictWaitSeconds(
+        evaluation.reasonConflicts,
+        threshold,
+        settings.sitePolicy.conflictWaitBaseSeconds,
+        settings.sitePolicy.conflictWaitMaxSeconds
+      )
+    : 0;
+  const assessment = {
+    ...evaluation,
+    threshold,
+    evaluatedAt
+  };
+  const warning = warningRequired
+    ? { waitSeconds, waitUntil: evaluatedAt + waitSeconds * 1000 }
+    : null;
+  const savedGate = await saveGateExchange(id, chatRevision, messages, {
+    assessment,
+    warning,
+    chatFailures: 0
+  });
+  return { reply, gate: publicGate(savedGate), assessmentUnavailable: false };
+}
+
+function interventionWeight(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error("Jev returned an invalid intervention weight.");
+  }
+  return Math.min(1, Math.max(0, value));
+}
+
+async function saveGateExchange(id, expectedRevision, messages, changes) {
   return serialize(async () => {
     const { runtimeState: latestValue } = await browser.storage.local.get("runtimeState");
     const latest = latestValue || clone(EMPTY_RUNTIME);
     const latestGate = latest.pendingGates?.[id];
     if (!latestGate) throw new Error("This intervention has expired.");
-    latestGate.messages = [
-      ...(latestGate.messages || []),
-      { role: "user", content: cleanText },
-      { role: "assistant", content: reply }
-    ].slice(-12);
-    latestGate.chatTurns = Number(latestGate.chatTurns || 0) + 1;
+    if (Number(latestGate.chatRevision || 0) !== expectedRevision) {
+      throw new Error("Another reflection response was already saved. Refresh and try again.");
+    }
+    latestGate.messages = messages;
+    latestGate.chatRevision = expectedRevision + 1;
+    Object.assign(latestGate, changes);
     await browser.storage.local.set({ runtimeState: latest });
-    return {
-      reply,
-      chatTurns: latestGate.chatTurns,
-      remaining: Math.max(0, latestGate.minimumChatTurns - latestGate.chatTurns),
-      canContinue: latestGate.chatTurns >= latestGate.minimumChatTurns
-    };
+    return latestGate;
   });
 }
 
@@ -820,14 +918,21 @@ async function continueGate(id, sender, fallback = false) {
     if (gate.outcome.action === "block") {
       throw new Error("This visit is blocked by strict mode. Change the intent or mode in settings.");
     }
-    if (
-      gate.outcome.action === "chat" &&
-      gate.chatTurns < gate.minimumChatTurns &&
-      !(fallback && gate.chatFailures > 0)
-    ) {
-      throw new Error("Finish the reflection before continuing.");
+
+    const usingFailOpen = fallback && Number(gate.chatFailures || 0) > 0;
+    if (gate.outcome.action === "chat" && !usingFailOpen) {
+      const state = gateAssessmentState(gate);
+      if (!state.reasonAccepted) {
+        throw new Error("Keep reflecting until Jev finds the reason sufficiently explained.");
+      }
+      if (state.warningRequired && state.waitRemainingSeconds > 0) {
+        throw new Error(
+          `This reason still conflicts with your intentions. Wait ${state.waitRemainingSeconds} more seconds.`
+        );
+      }
     }
-    const minutes = fallback ? 5 : gate.grantMinutes;
+
+    const minutes = usingFailOpen ? 5 : gate.grantMinutes;
     runtime.grants ||= {};
     runtime.grants[gate.hostname] = Date.now() + minutes * 60 * 1000;
     target = gate.targetUrl;

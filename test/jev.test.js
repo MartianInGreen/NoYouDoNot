@@ -30,7 +30,14 @@ test("site classifier builds typed atomic Jev questions", async () => {
         model: "jev-test",
         usage: { input_tokens: 10, output_tokens: 4 },
         answers: {
-          explicitly_disallowed: { type: "noul", noul: 0.05 },
+          effective_policy: choiceAnswer("general_guidance", [
+            "specific_allowance",
+            "specific_restriction",
+            "general_guidance",
+            "not_covered",
+            "ambiguous"
+          ]),
+          governing_intent: choiceAnswer("always", ["always", "multiple", "none"]),
           intent_fit: choiceAnswer("supports", ["supports", "purposeful", "intentional_leisure", "likely_drift", "conflicts"]),
           site_kind: choiceAnswer("useful_tool", ["useful_tool", "mixed_use", "attention_sink"]),
           purposeful: { type: "noul", noul: 0.9 },
@@ -46,15 +53,53 @@ test("site classifier builds typed atomic Jev questions", async () => {
     context: { behavior: { minutesOnSiteToday: 4 } }
   });
 
-  assert.equal(captured.questions.explicitly_disallowed.type, "noul");
-  assert.match(captured.questions.explicitly_disallowed.instructions, /local-time ranges literally/);
+  assert.equal(captured.questions.effective_policy.type, "choice");
+  assert.match(captured.questions.effective_policy.instructions, /carve-out/);
   assert.equal(captured.questions.intent_fit.type, "choice");
   assert.equal(captured.questions.purposeful.type, "noul");
   assert.equal(captured.questions.expected_value.type, "score");
   assert.equal(captured.state.visit.hostname, "example.com");
-  assert.equal(result.explicitlyDisallowed, 0.05);
+  assert.equal(result.effectivePolicy.choice, "general_guidance");
+  assert.equal(result.governingIntent.choice, "always");
   assert.equal(result.intentFit.choice, "supports");
   assert.equal(result.expectedValue.score, 2.2);
+});
+
+test("intervention evaluator weighs explanation and conflict after an exchange", async () => {
+  let captured;
+  const client = {
+    async systemOne(request) {
+      captured = request;
+      return {
+        model: "jev-test",
+        usage: { input_tokens: 18, output_tokens: 2 },
+        answers: {
+          reason_explained: { type: "noul", noul: 0.86 },
+          reason_conflicts: { type: "noul", noul: 0.72 }
+        }
+      };
+    }
+  };
+  const service = createJevService({ apiKey: "test", model: "jev-test" }, { client });
+  const result = await service.evaluateIntervention({
+    visit: { hostname: "youtube.com", title: "Home" },
+    reason: "conflicts",
+    intents: { always: "Avoid unbounded video browsing after 20:00", projects: [] },
+    context: { localTime: "21:15", weekday: "Monday", timeOfDay: "evening" },
+    messages: [
+      { role: "user", content: "I need one repair tutorial and will stop after saving it." },
+      { role: "assistant", content: "That gives this visit a concrete boundary." }
+    ]
+  });
+
+  assert.equal(Object.keys(captured.questions).length, 2);
+  assert.equal(captured.questions.reason_explained.type, "noul");
+  assert.equal(captured.questions.reason_conflicts.type, "noul");
+  assert.match(captured.questions.reason_explained.instructions, /arbitrary number of turns/);
+  assert.equal(captured.state.conversation.at(-1).role, "assistant");
+  assert.equal(captured.state.current_context.local_time, "21:15");
+  assert.equal(result.reasonExplained, 0.86);
+  assert.equal(result.reasonConflicts, 0.72);
 });
 
 test("feed classifier asks three questions per item in one call", async () => {

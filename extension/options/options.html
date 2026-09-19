@@ -120,9 +120,10 @@
         <div class="section-heading"><div><p class="kicker">BOUNDARIES</p><h2>Choose how the extension responds</h2><p>Jev judges meaning. Deterministic settings decide the consequence.</p></div></div>
         <div class="settings-panel">
           <label class="setting-row"><span><b>Enforcement style</b><small>Observe records only; balanced nudges drift; strict requires reflection more often.</small></span><select id="enforcement"><option value="observe">Observe only</option><option value="balanced">Balanced</option><option value="strict">Strict</option></select></label>
-          <label class="setting-row"><span><b>LLM reflection barrier</b><small>For conflicting visits, talk through why you still want to continue.</small></span><input id="intervention-enabled" type="checkbox" class="check" /></label>
-          <label class="setting-row"><span><b>Required user messages</b><small>Each must be a meaningful sentence. A provider outage offers a visible fail-open.</small></span><select id="minimum-turns"><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
-          <label class="setting-row"><span><b>Site confidence threshold</b><small>Low-confidence judgments always fail open.</small></span><div class="inline-range"><input id="site-threshold" type="range" min="50" max="95" step="1" /><output id="site-threshold-output">62%</output></div></label>
+          <label class="setting-row"><span><b>Adaptive reflection barrier</b><small>The LLM talks through the visit; Jev decides after each exchange whether the reason is clear.</small></span><input id="intervention-enabled" type="checkbox" class="check" /></label>
+          <label class="setting-row"><span><b>Base conflict wait</b><small>The minimum pause after Jev finds both a clear reason and a continuing conflict.</small></span><span class="number-field"><input id="conflict-wait-base" type="number" min="1" max="300" step="1" inputmode="numeric" /><small>seconds</small></span></label>
+          <label class="setting-row"><span><b>Maximum conflict wait</b><small>The pause scales with how strongly the explained reason conflicts, but never exceeds this limit.</small></span><span class="number-field"><input id="conflict-wait-max" type="number" min="1" max="1800" step="1" inputmode="numeric" /><small>seconds</small></span></label>
+          <label class="setting-row"><span><b>Jev action threshold</b><small>Low-confidence adverse site judgments fail open. The same percentage decides when a reflection weight is high.</small></span><div class="inline-range"><input id="site-threshold" type="range" min="50" max="95" step="1" /><output id="site-threshold-output">62%</output></div></label>
           <label class="setting-row"><span><b>Temporary allowance</b><small>How long a successfully explained visit remains available.</small></span><select id="grant-minutes"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 hour</option><option value="120">2 hours</option></select></label>
           <label class="setting-row setting-column"><span><b>Never interrupt these domains</b><small>Safety exceptions for tools that should stay available. One domain per line; subdomains are included.</small></span><textarea id="protected-domains" rows="5" spellcheck="false"></textarea></label>
         </div>
@@ -137,7 +138,7 @@
             <label><span>Bridge token</span><input id="bridge-token" type="password" autocomplete="off" spellcheck="false" /></label>
           </div>
           <div class="connection-actions"><button id="test-bridge" class="secondary" type="button">Test connection</button><a href="https://console.typesafe.ai" target="_blank" rel="noreferrer">Get a TypeSafe key ↗</a></div>
-          <p class="privacy-callout">Only hostname, path without query parameters, page title, active intent, and computed usage totals go to Jev. Feed classification sends visible post/video metadata. Intervention text goes to the LLM you configure.</p>
+          <p class="privacy-callout">Site checks send hostname, query-free path, title, active intent, and computed usage totals to Jev. Feed checks send visible post/video metadata. Intervention text goes to your configured LLM and then to Jev for the two reflection weights.</p>
         </div>
       </section>
 

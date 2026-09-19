@@ -28,7 +28,7 @@ For a site judgment, the bridge receives and sends to TypeSafe Jev:
 
 For YouTube and X/Twitter classification, the bridge receives visible item title/text, author/channel, metadata, a query-free content path, the platform algorithm description, and a small set of user feedback examples. That material is sent to Jev.
 
-When the optional reflection barrier is used, the visit hostname/title, active intentions, and intervention conversation are sent to the OpenAI-compatible LLM endpoint configured on the bridge.
+When the optional reflection barrier is used, the visit hostname/title, active intentions, and intervention conversation are sent to the OpenAI-compatible LLM endpoint configured on the bridge. After each user-message/LLM-response exchange, the same bounded conversation and visit context are sent to TypeSafe Jev so it can weigh whether the reason is explained and whether it still conflicts with the intentions.
 
 ## Never collected by this project
 

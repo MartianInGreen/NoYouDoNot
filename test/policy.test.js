@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  deriveConflictWaitSeconds,
   deriveFeedAction,
+  deriveInterventionAccess,
   deriveSiteAction,
   domainMatches,
   isProtectedDomain,
@@ -80,6 +82,59 @@ test("positive classifications are the allow reason regardless of confidence", (
       { action: "allow", reason: choice }
     );
   }
+});
+
+test("intervention access requires a clear reason before considering conflict", () => {
+  const now = 1_000_000;
+  assert.deepEqual(
+    deriveInterventionAccess(
+      { reasonExplained: 0.61, reasonConflicts: 0.95, threshold: 0.62 },
+      { waitSeconds: 120, waitUntil: now + 120_000 },
+      now
+    ),
+    {
+      reasonAccepted: false,
+      warningRequired: false,
+      waitSeconds: 0,
+      waitUntil: 0,
+      waitRemainingSeconds: 0,
+      canContinue: false
+    }
+  );
+});
+
+test("a clear aligned reason can continue without a warning", () => {
+  const state = deriveInterventionAccess({
+    reasonExplained: 0.8,
+    reasonConflicts: 0.2,
+    threshold: 0.62
+  });
+  assert.equal(state.reasonAccepted, true);
+  assert.equal(state.warningRequired, false);
+  assert.equal(state.canContinue, true);
+});
+
+test("a clear conflicting reason waits until its warning expires", () => {
+  const now = 1_000_000;
+  const assessment = { reasonExplained: 0.8, reasonConflicts: 0.9, threshold: 0.62 };
+  const warning = { waitSeconds: 45, waitUntil: now + 45_000 };
+  const waiting = deriveInterventionAccess(assessment, warning, now);
+  assert.equal(waiting.warningRequired, true);
+  assert.equal(waiting.waitRemainingSeconds, 45);
+  assert.equal(waiting.canContinue, false);
+  assert.equal(deriveInterventionAccess(assessment, warning, now + 45_000).canContinue, true);
+});
+
+test("conflict waits scale from the configured base to maximum", () => {
+  assert.equal(deriveConflictWaitSeconds(0.61, 0.62, 15, 120), 0);
+  assert.equal(deriveConflictWaitSeconds(0.62, 0.62, 15, 120), 15);
+  assert.equal(deriveConflictWaitSeconds(1, 0.62, 15, 120), 120);
+  const middle = deriveConflictWaitSeconds(0.81, 0.62, 15, 120);
+  assert.ok(middle > 15 && middle < 120);
+});
+
+test("conflict wait maximum cannot fall below its base", () => {
+  assert.equal(deriveConflictWaitSeconds(1, 0.62, 30, 10), 30);
 });
 
 test("feed policy limits explicit high-confidence limit results", () => {

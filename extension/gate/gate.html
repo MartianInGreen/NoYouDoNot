@@ -23,13 +23,17 @@
         <p class="explanation" id="explanation"></p>
 
         <section class="intent-reminder" id="intent-reminder">
-          <span>YOU ASKED TO REMEMBER</span>
+          <span id="intent-label">YOU ASKED TO REMEMBER</span>
           <blockquote id="intent-text"></blockquote>
         </section>
 
         <section class="chat" id="chat" hidden>
-          <div class="chat-heading"><div><span>REFLECTION BARRIER</span><h2>Make the reason explicit</h2></div><div class="progress" id="progress"></div></div>
+          <div class="chat-heading"><div><span>REFLECTION BARRIER</span><h2>Make the reason explicit</h2></div><div class="reflection-status" id="reflection-status">Jev checks each exchange</div></div>
           <div class="messages" id="messages" aria-live="polite"></div>
+          <div class="assessment" id="assessment" hidden aria-live="polite">
+            <div><span>REASON EXPLAINED</span><strong id="reason-weight">—</strong><i><b id="reason-bar"></b></i></div>
+            <div><span>STILL CONFLICTS</span><strong id="conflict-weight">—</strong><i><b id="conflict-bar"></b></i></div>
+          </div>
           <form id="chat-form">
             <label for="chat-input">Your answer</label>
             <div class="composer"><textarea id="chat-input" rows="2" maxlength="1800" placeholder="I came here because…" required></textarea><button id="send" type="submit">Send</button></div>
@@ -41,12 +45,30 @@
           <button id="leave" class="secondary" type="button">Close this tab</button>
           <button id="continue" class="primary" type="button" disabled>Continue intentionally</button>
         </div>
-        <button id="fallback" class="fallback" type="button" hidden>LLM unavailable — continue for 5 minutes</button>
+        <button id="fallback" class="fallback" type="button" hidden>AI check unavailable — continue for 5 minutes</button>
       </section>
 
       <section class="gate-card loading" id="loading"><div class="spinner">◇</div><h1>Checking the intention…</h1></section>
       <section class="gate-card error-card" id="error" hidden><div class="verdict-icon">!</div><h1>This pause has expired.</h1><p id="error-text">The original tab may have been closed or resumed.</p><button id="error-close" class="secondary" type="button">Close tab</button></section>
     </main>
+
+    <section class="warning-overlay" id="conflict-warning" role="alertdialog" aria-modal="true" aria-labelledby="warning-heading" hidden>
+      <div class="warning-card">
+        <div class="warning-icon">!</div>
+        <p class="eyebrow">YOUR REASON IS CLEAR</p>
+        <h2 id="warning-heading">It still conflicts with what you asked for.</h2>
+        <p id="warning-copy">Jev found that this explained visit still points away from your active intentions.</p>
+        <div class="warning-weights">
+          <span><small>REASON EXPLAINED</small><strong id="warning-reason-weight">—</strong></span>
+          <span><small>CONFLICT WEIGHT</small><strong id="warning-conflict-weight">—</strong></span>
+        </div>
+        <p class="countdown-copy" aria-live="polite">Take <strong id="warning-countdown">—</strong> before deciding whether to cross this boundary.</p>
+        <div class="warning-actions">
+          <button id="warning-leave" class="secondary" type="button">Close this tab</button>
+          <button id="warning-continue" class="warning-primary" type="button" disabled>Wait…</button>
+        </div>
+      </div>
+    </section>
     <script type="module" src="gate.js"></script>
   </body>
 </html>
